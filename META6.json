@@ -1,0 +1,33 @@
+{
+   "meta6" : "0",
+   "tags" : [
+		"Pod6",
+		"Pod",
+		"HTML",
+		"Blogspot"
+   ],
+   "provides" : {
+      "Pod::To::BlogspotHTML" : "lib/Pod/To/BlogspotHTML.pm6"
+   },
+   "test-depends" : [
+      "Test"
+   ],
+   "support" : {
+      "source" : "https://github.com/drforr/perl6-Pod-To-BlogspotHTML"
+   },
+   "perl" : "6.c",
+   "build-depends" : [],
+   "auth" : "github:drforr",
+   "source-url" : "https://github.com/drforr/perl6-Pod-To-BlogspotHTML.git",
+   "depends" : [
+       "Test::META",
+       "URI"
+   ],
+   "name" : "Pod-To-BlogspotHTML",
+   "authors" : [
+      "Jeffrey Goff <drforr@pobox.com>"
+   ],
+   "version" : "0.0.1",
+   "license" : "Artistic-2.0",
+   "description" : "Blogspot-ready HTML"
+}
