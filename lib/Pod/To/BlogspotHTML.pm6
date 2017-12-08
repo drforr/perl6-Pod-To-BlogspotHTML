@@ -28,6 +28,10 @@ role Pod::To::BlogspotHTML::Mixins {
 	method Code( $node ) {
 		qq[<code>{$node.contents}</code>];
 	}
+	# XXX Is this documented? Is this even a thing?
+	method Definition( $node ) {
+		qq[<defn>{$node.contents}</defn>];
+	}
 	method Entity( $node ) {
 		given $node.contents {
 			when / ^ \d+ $ / {
@@ -43,6 +47,9 @@ role Pod::To::BlogspotHTML::Mixins {
 			}
 		}
 	}
+	method Heading( $node ) {
+		qq[<h{$node.level}>{$node.contents[0].contents[0]}</h{$node.level}>];
+	}
 	method Italic( $node ) {
 		qq[<i>{$node.contents}</i>];
 	}
@@ -55,8 +62,15 @@ role Pod::To::BlogspotHTML::Mixins {
 	method Notes( $node ) {
 		$node.contents;
 	}
+	method Para( $node ) {
+		qq[<p>{$node.contents}</p>];
+	}
+	# XXX Is this documented? Is this even a thing?
+	method Replaceable( $node ) {
+		qq[<var>{$node.contents}</var>];
+	}
 	method Terminal( $node ) {
-		qq[<XXX>{$node.contents}</XXX>];
+		qq[<samp>{$node.contents}</samp>];
 	}
 	method Underline( $node ) {
 		qq[<u>{$node.contents}</u>];
@@ -66,9 +80,7 @@ role Pod::To::BlogspotHTML::Mixins {
 	}
 	# XXX This probably should go into @.meta, that can be decided later.
 	method Meta( $node ) {
-		my $name = $node.name;
-		my $contents = $node.contents[0].contents[0];
-		qq[<h1 id="$name">$name</h1><p>$contents</p>\n]
+		qq[<h1 id="{$node.name}">{$node.name}</h1><p>{$node.contents[0].contents[0]}</p>];
 	}
 }
 
@@ -81,7 +93,7 @@ class Pod::To::BlogspotHTML {
 
 	has %.meta;
 	has $.preamble;
-	has $.content;
+	has $.contents;
 	has $.postamble;
 
 #multi method start (Pod::Block:D $node) {
@@ -92,7 +104,9 @@ class Pod::To::BlogspotHTML {
 #    return True;
 #}
 #
-#multi method start (Pod::Block::Code $node) {  }
+	multi method start ( Pod::Block::Code $node ) {
+		$!contents ~= self.Code( $node );
+	}
 #multi method end (Pod::Block::Code $node) {  }
 	multi method start ( Pod::Block::Comment $node ) {
 		self.Zeroed-Out( $node );
@@ -106,74 +120,59 @@ class Pod::To::BlogspotHTML {
 			when META-TAGS.any {
 				$!preamble ~= self.Meta( $node );
 			}
-			when 'SYNOPSIS' {
-die $node;
+			when 'input' {
+				$!contents ~= self.Keyboard(
+					$node.contents[0]
+				);
+				return False; # Bail out to skip the nested para
+			}
+			when 'output' {
+				$!contents ~= self.Terminal(
+					$node.contents[0]
+				);
+				return False; # Bail out to skip the nested para
 			}
 			when 'pod' {
-				# Maybe <div>.. here
+				# For the moment, do nothing.
 			}
 			default {
+				die "Unknown block named '{$node.name}'";
 			}
 		}
 		True;
 	}
-	multi method end( Pod::Block::Named $node ) {
-		given $node.name {
-			when 'pod' {
-				# Maybe </div> here...
-			}
-			default {
-			}
-		}
-	}
+#multi method end( Pod::Block::Named $node ) { }
 #multi method end (Pod::Block::Named $node) {  }
 	multi method start (Pod::Block::Para $node) {
-		$!content ~= qq[<p>{$node.contents}</p>];
+		$!contents ~= self.Para( $node );
 	}
-	multi method end (Pod::Block::Para $node) {
-	}
+#multi method end (Pod::Block::Para $node) { }
 #multi method start (Pod::Block::Table $node) {  }
 #multi method end (Pod::Block::Table $node) {  }
 	multi method start (Pod::FormattingCode $node) {
 		given $node.type {
-			when 'B' {
-				$!content ~= self.Bold( $node );
-			}
-			when 'C' {
-				$!content ~= self.Code( $node );
-			}
-			when 'E' {
-				$!content ~= self.Entity( $node );
-			}
-			when 'I' {
-				$!content ~= self.Italic( $node );
-			}
-			when 'K' {
-				$!content ~= self.Keyboard( $node );
-			}
-			when 'L' {
-				$!content ~= self.Link( $node );
-			}
-			when 'N' {
-				$!postamble ~= self.Notes( $node );
-			}
-			when 'T' {
-				$!content ~= self.Terminal( $node );
-			}
-			when 'U' {
-				$!content ~= self.Underline( $node );
-			}
-			when 'Z' {
-				$!content ~= self.Zeroed-Out( $node );
-			}
+			when 'B' { $!contents ~= self.Bold( $node ); }
+			when 'C' { $!contents ~= self.Code( $node ); }
+			when 'D' { $!contents ~= self.Definition( $node ); }
+			when 'E' { $!contents ~= self.Entity( $node ); }
+			when 'I' { $!contents ~= self.Italic( $node ); }
+			when 'K' { $!contents ~= self.Keyboard( $node ); }
+			when 'L' { $!contents ~= self.Link( $node ); }
+			when 'N' { $!postamble ~= self.Notes( $node ); }
+			when 'R' { $!contents ~= self.Replaceable( $node ); }
+			when 'T' { $!contents ~= self.Terminal( $node ); }
+			when 'U' { $!contents ~= self.Underline( $node ); }
+			when 'Z' { $!contents ~= self.Zeroed-Out( $node ); }
 			default {
 				die "Unknown formatting code '{$node.type}'"
 			}
 		}
 	}
-	multi method end (Pod::FormattingCode $node) {
+#multi method end (Pod::FormattingCode $node) { }
+	multi method start (Pod::Heading $node) {
+		$!contents ~= self.Heading( $node );
+		return False; # Bail out to skip the nested para
 	}
-#multi method start (Pod::Heading $node) {  }
 #multi method end (Pod::Heading $node) {  }
 #multi method start (Pod::Item $node) {  }
 #multi method end (Pod::Item $node) {  }
@@ -194,7 +193,7 @@ die $node;
 #say $listener.perl;
 
 		$final-content ~= $listener.preamble if $listener.preamble;
-		$final-content ~= $listener.content if $listener.content;
+		$final-content ~= $listener.contents if $listener.contents;
 		$final-content ~= $listener.postamble if $listener.postamble;
 		$final-content;
 	}

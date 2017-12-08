@@ -2,11 +2,8 @@ use v6;
 use Pod::To::BlogspotHTML;
 use Test;
 
-plan 1;
-
-#############################################################################
-
 =begin pod
+Lorem ipsum
 =end pod
 
 ok Pod::To::BlogspotHTML.render( $=pod[0] );
