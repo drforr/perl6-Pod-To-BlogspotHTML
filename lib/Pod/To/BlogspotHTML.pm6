@@ -113,6 +113,12 @@ role Pod::To::BlogspotHTML::Mixins {
 	method Replaceable( $node ) {
 		qq[<var>{$node.contents}</var>];
 	}
+	method Section-Start( $node ) {
+		qq[<section><h1>{$node.name}</h1>];
+	}
+	method Section-End( $node ) {
+		qq[</section>];
+	}
 	method Terminal( $node ) {
 		qq[<samp>{$node.contents}</samp>];
 	}
@@ -180,13 +186,22 @@ class Pod::To::BlogspotHTML {
 				# For the moment, do nothing.
 			}
 			default {
-				die "Unknown block named '{$node.name}'";
+				$!contents ~= self.Section-Start( $node );
 			}
 		}
 		True;
 	}
-#multi method end( Pod::Block::Named $node ) { }
-#multi method end (Pod::Block::Named $node) {  }
+	multi method end (Pod::Block::Named $node) {
+		given $node.name {
+			when 'pod' {
+				# For the moment, do nothing.
+			}
+			default {
+				$!contents ~= self.Section-End( $node );
+			}
+		}
+		True;
+	}
 	multi method start (Pod::Block::Para $node) {
 		$!contents ~= self.Para( $node );
 	}

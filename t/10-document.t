@@ -48,6 +48,9 @@ This module
 	/, 'SUBTITLE';
 };
 
+subtest 'generic block', {
+};
+
 done-testing;
 
 # vim: ft=perl6
