@@ -12,7 +12,13 @@ Sed ut perspiciatis
 my $html = Pod::To::BlogspotHTML.render( $=pod[0] );
 #die $html;
 
-like $html, / '<section>' '<h1>' 'foo' '</h1>' '<p>' 'Lorem ipsum' '</p>' '<p>' 'Sed ut perspiciatis' '</p>' '</section>' /, 'start section';
+like $html, /
+	^ '<section>'
+		'<h1>' 'foo' '</h1>'
+		'<p>' 'Lorem ipsum' '</p>'
+		'<p>' 'Sed ut perspiciatis' '</p>'
+	'</section>'
+/, 'start section';
 
 done-testing;
 

@@ -2,8 +2,6 @@ use v6;
 use Pod::To::BlogspotHTML;
 use Test;
 
-subtest 'Paragraph', {
-
 =begin pod
 Lorem ipsum dolor sit amet, consectetur adipiscing elit. Donec a massa est. Integer ut semper metus, quis elementum nunc. Vivamus et mattis eros, quis varius velit. Cras elementum non ante quis semper. Vivamus vitae quam non leo ultrices elementum. Duis at faucibus orci. Donec vitae tincidunt est. In hac habitasse platea dictumst. Nulla eu neque pretium, eleifend turpis et, consequat turpis. Maecenas sollicitudin consequat lacinia. Praesent elementum purus eget risus pharetra convallis. Praesent accumsan turpis risus, sit amet pellentesque erat ultricies id. Vivamus condimentum enim purus, id aliquet turpis dictum lacinia. Ut bibendum ligula in justo ullamcorper, sed vehicula risus dapibus. Nunc ac dapibus erat. Maecenas id orci tortor.
 
@@ -11,13 +9,13 @@ Nulla ullamcorper, risus vitae aliquet commodo, leo libero accumsan nibh, non pl
 =end pod
 
 #die $=pod[0].perl;
-	my $html = Pod::To::BlogspotHTML.render( $=pod[0] );
+my $html = Pod::To::BlogspotHTML.render( $=pod[0] );
+#die $html;
 
-	like $html, /
-		'<p>' 'Lorem ipsum' .+ '</p>'
-		'<p>' 'Nulla ullamcorper' .+ '</p>'
-	/, 'two unbroken paragraphs';
-};
+like $html, /
+	^ '<p>' 'Lorem ipsum' .+ '</p>'
+	'<p>' 'Nulla ullamcorper' .+ '</p>'
+/, 'two unbroken paragraphs';
 
 done-testing;
 

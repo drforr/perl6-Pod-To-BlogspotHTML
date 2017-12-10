@@ -11,10 +11,17 @@ my $code = "Hello cruel world!";
 
 #die $=pod[0].perl;
 my $html = Pod::To::BlogspotHTML.render( $=pod[0] );
+#die $html;
 
-like $html, / '<code>' .+ 'Hello world!' .+ '</code>' /, 'Code';
-like $html, / '</code>' '<code>' /, 'Intermediate';
-like $html, / '<code>' .+ 'Hello cruel world!' .+ '</code>' /, 'Aussie';
+like $html, /
+	^ '<code>' .+ 'Hello world!' .+ '</code>'
+/, 'Code';
+like $html, /
+	'</code>' '<code>'
+/, 'Intermediate';
+like $html, /
+	'<code>' .+ 'Hello cruel world!' .+ '</code>'
+/, 'Aussie';
 
 done-testing;
 
