@@ -81,6 +81,17 @@ my role Pod::To::BlogspotHTML::Mixins {
 	method Section-Start( $node ) { qq[<section><h1>{$node.name}</h1>]; }
 	method Section-End( $node ) { qq[</section>]; }
 
+	method Table-Start( $node ) { qq[<table>]; }
+	method Table-End( $node ) { qq[</table>]; }
+
+	method Table-Row-Start( $row ) { qq[<tr>]; }
+	method Table-Row-End( $row ) { qq[</tr>]; }
+
+	method Table-Data-Start( $column ) { qq[<td>]; }
+	method Table-Data-End( $column ) { qq[</td>]; }
+
+	method Table-Column( $column ) { $column; }
+
 	method Terminal-Start( $node ) { qq[<samp>]; }
 	method Terminal-End( $node ) { qq[</samp>]; }
 
@@ -92,7 +103,13 @@ my role Pod::To::BlogspotHTML::Mixins {
 
 	# XXX This probably should go into @.meta, that can be decided later.
 	method Meta( $node ) {
-		qq[<h1 id="{$node.name}">{$node.name}</h1><p>{$node.contents[0].contents[0]}</p>];
+#		if $node.^can('contents') {
+#			qq[<h1 id="{$node.name}">{$node.name}</h1><p>{$node.contents[0].contents[0]}</p>];
+#		}
+#		else {
+#			qq[<h1 id="{$node.name}">{$node.name}</h1>];
+#		}
+''
 	}
 }
 
@@ -151,8 +168,11 @@ my class Pod::To::BlogspotHTML::TreeMunger {
 )
 	multi method prune( Str $node ) {
 	}
+	multi method prune( Array $node ) {
+		self.prune( $_ ) for @( $node );
+	}
 	multi method prune( $node ) {
-		self.prune( $_ ) for $node.contents;
+#		self.prune( $_ ) for $node.contents;
 	}
 }
 
@@ -160,22 +180,18 @@ class Pod::To::BlogspotHTML {
 	also does Pod::To::BlogspotHTML::Mixins;
 	also does Pod::TreeWalker::Listener;
 
-	constant META-TAGS =
-		< NAME AUTHOR VERSION TITLE SUBTITLE SYNOPSIS DESCRIPTION >;
+	constant META-TAGS = <
+		 NAME AUTHOR VERSION TITLE SUBTITLE SYNOPSIS DESCRIPTION
+	>;
 
 	has %.meta;
 	has $.preamble;
 	has $.contents;
 	has $.postamble;
 
-#multi method start ( Pod::Block:D $node ) {
-#    return True;
-#}
-#
-#multi method end ( Pod::Block:D $node ) {
-#    return True;
-#}
-#
+	#multi method start ( Pod::Block:D $node ) { }
+	#multi method end ( Pod::Block:D $node ) { }
+
 	multi method start( Pod::Block::Code $node ) {
 		$!contents ~= self.Code-Block-Start( $node );
 	}
@@ -185,9 +201,9 @@ class Pod::To::BlogspotHTML {
 	multi method start( Pod::Block::Comment $node ) {
 		self.Zeroed-Out( $node );
 	}
-#multi method end( Pod::Block::Comment $node ) {  }
-#multi method start( Pod::Block::Declarator $node ) {  }
-#multi method end( Pod::Block::Declarator $node ) {  }
+	#multi method end( Pod::Block::Comment $node ) {  }
+	#multi method start( Pod::Block::Declarator $node ) {  }
+	#multi method end( Pod::Block::Declarator $node ) {  }
 
 	multi method start( Pod::Block::Named $node ) {
 		given $node.name {
@@ -233,8 +249,16 @@ class Pod::To::BlogspotHTML {
 	multi method end( Pod::Block::Para $node ) {
 		$!contents ~= self.Para-End( $node );
 	}
-#multi method start( Pod::Block::Table $node ) {  }
-#multi method end( Pod::Block::Table $node ) {  }
+
+	multi method start( Pod::Block::Table $node ) {
+		$!contents ~= self.Table-Start( $node );
+		return True;
+	}
+	multi method end( Pod::Block::Table $node ) {
+		$!contents ~= self.Table-End( $node );
+		return True;
+	}
+
 	multi method start( Pod::FormattingCode $node ) {
 		given $node.type {
 			when 'B' { $!contents ~= self.Bold-Start( $node ); }
@@ -316,8 +340,9 @@ class Pod::To::BlogspotHTML {
 	multi method end( Pod::Item $node ) {
 		$!contents ~= self.Item-End( $node );
 	}
-#multi method start (Pod::Raw $node) { }
-#multi method end (Pod::Raw $node) {  }
+
+	#multi method start( Pod::Raw $node ) { }
+	#multi method end( Pod::Raw $node ) { }
 
 	method start-list( Int :$level, Bool :$numbered ) {
 		$!contents ~= self.List-Start( $level, $numbered );
@@ -325,8 +350,21 @@ class Pod::To::BlogspotHTML {
 	method end-list( Int :$level, Bool :$numbered ) {
 		$!contents ~= self.List-End( $level, $numbered );
 	}
-#method table-row (Array $row) { }
-#method config (Pod::Config $node) {  }
+
+	method table-row( Array $row ) {
+		$!contents ~= self.Table-Row-Start( $row );
+		for @( $row ) -> $element {
+			$!contents ~= self.Table-Data-Start( $element );
+			$!contents ~= self.Table-Column(
+				$element.contents[0].contents[0]
+			);
+			$!contents ~= self.Table-Data-End( $element );
+		}
+		$!contents ~= self.Table-Row-End( $row );
+		return True;
+	}
+	#method config( Pod::Config $node ) {  }
+
 	method text( Str:D $text ) {
 		$!contents ~= $text;
 	}
@@ -338,7 +376,6 @@ class Pod::To::BlogspotHTML {
 		$walker.walk-pod( $pod );
 #say $walker.text-contents-of( $pod );
 		my $final-content;
-#say $listener.perl;
 
 		$final-content ~= $listener.preamble if $listener.preamble;
 		$final-content ~= $listener.contents if $listener.contents;
