@@ -80,7 +80,7 @@ like $html, /:s
 $html = Pod::To::BlogspotHTML.render( $=pod[$pod-counter++] );
 #die $html;
 
-#`( XXX V<> isn't in the doco.
+#`( XXX V<> is NYI yet, apparently.
 like $html, /
 1
 /;
@@ -92,14 +92,15 @@ like $html, /
 
 #die $=pod[$pod-counter].perl;
 $html = Pod::To::BlogspotHTML.render( $=pod[$pod-counter++] );
-die $html;
+#die $html;
 my $html2 = Pod::To::BlogspotHTML.render( $=pod[$pod-counter++] );
-die $html2;
+#die $html2;
 
 #`( XXX Needs to be translated.
 like $html, /
 <code>infix:<+> </code>
 /;
+)
 
 done-testing;
 

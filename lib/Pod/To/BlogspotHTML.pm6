@@ -84,6 +84,9 @@ my role Pod::To::BlogspotHTML::Mixins {
 	method Table-Start( $node ) { qq[<table>]; }
 	method Table-End( $node ) { qq[</table>]; }
 
+	method Table-Header-Start( $row ) { qq[<th>]; }
+	method Table-Header-End( $row ) { qq[</th>]; }
+
 	method Table-Row-Start( $row ) { qq[<tr>]; }
 	method Table-Row-End( $row ) { qq[</tr>]; }
 
@@ -97,6 +100,9 @@ my role Pod::To::BlogspotHTML::Mixins {
 
 	method Underline-Start( $node ) { qq[<u>]; }
 	method Underline-End( $node ) { qq[</u>]; }
+
+	method Verbatim-Start( $node ) { qq[<verbatim>]; }
+	method Verbatim-End( $node ) { qq[</verbatim>]; }
 
 	method Zeroed-Out-Start( $node ) { qq[<!--]; }
 	method Zeroed-Out-End( $node ) { qq[-->]; }
@@ -199,9 +205,11 @@ class Pod::To::BlogspotHTML {
 		$!contents ~= self.Code-Block-End( $node );
 	}
 	multi method start( Pod::Block::Comment $node ) {
-		self.Zeroed-Out( $node );
+		$!contents ~= self.Zeroed-Out-Start( $node );
 	}
-	#multi method end( Pod::Block::Comment $node ) {  }
+	multi method end( Pod::Block::Comment $node ) {
+		$!contents ~= self.Zeroed-Out-End( $node );
+	}
 	#multi method start( Pod::Block::Declarator $node ) {  }
 	#multi method end( Pod::Block::Declarator $node ) {  }
 
@@ -252,6 +260,19 @@ class Pod::To::BlogspotHTML {
 
 	multi method start( Pod::Block::Table $node ) {
 		$!contents ~= self.Table-Start( $node );
+		if $node.headers {
+			$!contents ~= self.Table-Header-Start( $node );
+			for @( $node.headers ) -> $element {
+				$!contents ~= self.Table-Data-Start( $element );
+				$!contents ~= self.Table-Column(
+					$element.contents[0].contents[0]
+				) if $element and
+					$element.contents[0];
+				$!contents ~= self.Table-Data-End( $element );
+			}
+			$!contents ~= self.Table-Header-End( $node );
+		}
+
 		return True;
 	}
 	multi method end( Pod::Block::Table $node ) {
@@ -288,6 +309,9 @@ class Pod::To::BlogspotHTML {
 			when 'U' {
 				$!contents ~= self.Underline-Start( $node );
 			}
+			when 'V' {
+				$!contents ~= self.Verbatim-Start( $node );
+			}
 			when 'Z' {
 				$!contents ~= self.Zeroed-Out-Start( $node );
 			}
@@ -318,6 +342,9 @@ class Pod::To::BlogspotHTML {
 			}
 			when 'U' {
 				$!contents ~= self.Underline-End( $node );
+			}
+			when 'V' {
+				$!contents ~= self.Verbatim-End( $node );
 			}
 			when 'Z' {
 				$!contents ~= self.Zeroed-Out-End( $node );
@@ -357,7 +384,8 @@ class Pod::To::BlogspotHTML {
 			$!contents ~= self.Table-Data-Start( $element );
 			$!contents ~= self.Table-Column(
 				$element.contents[0].contents[0]
-			);
+			) if $element and
+				$element.contents[0];
 			$!contents ~= self.Table-Data-End( $element );
 		}
 		$!contents ~= self.Table-Row-End( $row );
